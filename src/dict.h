@@ -44,10 +44,42 @@
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void) V)
 
+#define OP_DEL      0
+#define OP_UPDATE   1
+#define OP_W2D      2
+#define OP_MAX      3
+
+#define DE_NORMAL   8
+#define DE_EMPTY    9
+#define DE_UPDATE   10
+
+#define DE_NORMAL_W     0
+#define DE_NORMAL_UW    1
+#define DE_EMPTY_W      2
+#define DE_EMPTY_UW     3
+#define DE_EMPTY_UUW    4
+#define DE_UPDATE_W     5
+#define DE_UPDATE_UW    6
+#define DE_MAX          7
+
+
+#define DICT_CUR_INIT   0
+
+#define DE_ACCESS_BUSY  0
+#define DE_ACCESS_FREE  1
+
+#define DICT_NORMAL     0
+#define DICT_CKP        1
+
 typedef struct dictEntry {
+    /*PP ADD*/
+    unsigned char state;
+    unsigned char writed;
+    unsigned char access;
+
     void *key;
     union {
-        void *val;
+        void *val[4];
         uint64_t u64;
         int64_t s64;
         double d;
@@ -74,6 +106,10 @@ typedef struct dictht {
 } dictht;
 
 typedef struct dict {
+    /*PP ADD*/
+    unsigned char cur;
+    unsigned char state;
+
     dictType *type;
     void *privdata;
     dictht ht[2];
@@ -100,17 +136,28 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 #define DICT_HT_INITIAL_SIZE     4
 
 /* ------------------------------- Macros ------------------------------------*/
-#define dictFreeVal(d, entry) \
+#define dictFreeVal(d, de,_val_idx_) do {\
     if ((d)->type->valDestructor) \
-        (d)->type->valDestructor((d)->privdata, (entry)->v.val)
-
+        (d)->type->valDestructor((d)->privdata, de->v.val[_val_idx_]);\
+    de->v.val[_val_idx_] = NULL;\
+}while(0)
 #define dictSetVal(d, entry, _val_) do { \
-    if ((d)->type->valDup) \
-        entry->v.val = (d)->type->valDup((d)->privdata, _val_); \
-    else \
-        entry->v.val = (_val_); \
+    if ((d)->type->valDup){ \
+        entry->v.val[d->cur] = (d)->type->valDup((d)->privdata, _val_); \
+        entry->v.val[2] = (d)->type->valDup((d)->privdata, _val_);\
+    }else{ \
+        entry->v.val[d->cur] = (_val_); \
+        entry->v.val[2] = (_val_);\
+    }\
 } while(0)
-
+/*PP ADD */
+#define dictSetBackupVal(d,entry,_val_) do {\
+    if ((d)->type->valDup){ \
+        entry->v.val[3] = (d)->type->valDup((d)->privdata, _val_); \
+    }else{ \
+        entry->v.val[3] = (_val_); \
+    }\
+} while(0)
 #define dictSetSignedIntegerVal(entry, _val_) \
     do { entry->v.s64 = _val_; } while(0)
 
@@ -138,7 +185,10 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 
 #define dictHashKey(d, key) (d)->type->hashFunction(key)
 #define dictGetKey(he) ((he)->key)
-#define dictGetVal(he) ((he)->v.val)
+
+#define dictGetVal(he)      ((he)->v.val[2])
+#define dictGetValRDB(he)   ((he)->v.val[3])
+
 #define dictGetSignedIntegerVal(he) ((he)->v.s64)
 #define dictGetUnsignedIntegerVal(he) ((he)->v.u64)
 #define dictGetDoubleVal(he) ((he)->v.d)
@@ -181,5 +231,6 @@ unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, void *pri
 extern dictType dictTypeHeapStringCopyKey;
 extern dictType dictTypeHeapStrings;
 extern dictType dictTypeHeapStringCopyKeyValue;
-
+/*PP ADD*/
+int dictEntryStateConvert(dict *d,dictEntry *de,unsigned char operation,void *val);
 #endif /* __DICT_H */

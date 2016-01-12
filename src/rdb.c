@@ -39,7 +39,47 @@
 #include <sys/wait.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+/*PP ADD*/
+void rdbPrepare( void )
+{
+    int j;
 
+    for (j = 0; j < server.dbnum; j++) {
+            redisDb *db = server.db+j;
+            dict *d = db->dict;
+            d->state = DICT_CKP;
+            d->cur = !d->cur;
+    }
+}
+void *rdbThread( void *arg)
+{
+    int old_type;
+    unsigned char expected_val;
+    redisLog(REDIS_NOTICE,"RDB thread start.");
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,&old_type);
+    while (1){
+        expected_val = SERVER_CKP;
+
+        if(__atomic_compare_exchange_1(&server.state,
+                                       &expected_val,
+                                       SERVER_CKP,
+                                       1,
+                                       __ATOMIC_SEQ_CST,
+                                       __ATOMIC_SEQ_CST)){
+
+            if ( rdbSave(server.rdb_filename) == REDIS_OK){
+                redisLog(REDIS_WARNING,"Checkpoint Success.");
+            }else{
+                redisLog(REDIS_WARNING,"Checkpoint Fail!");
+            }
+            __atomic_store_1(&server.state,SERVER_NORMAL,__ATOMIC_SEQ_CST);
+        }else{
+            usleep(100000);
+        }
+    }
+    pthread_exit(NULL);
+}
+//PP END
 static int rdbWriteRaw(rio *rdb, void *p, size_t len) {
     if (rdb && rioWrite(rdb,p,len) == 0)
         return -1;
@@ -662,12 +702,14 @@ int rdbSaveRio(rio *rdb, int *error) {
         /* Iterate this DB writing every entry */
         while((de = dictNext(di)) != NULL) {
             sds keystr = dictGetKey(de);
-            robj key, *o = dictGetVal(de);
+            robj key, *o = dictGetValRDB(de);
             long long expire;
-
+            if (de->writed == d->cur)
+                continue;
             initStaticStringObject(key,keystr);
             expire = getExpire(db,&key);
             if (rdbSaveKeyValuePair(rdb,&key,o,expire,now) == -1) goto werr;
+            dictEntryStateConvert(d,de,OP_W2D,NULL);
         }
         dictReleaseIterator(di);
     }
