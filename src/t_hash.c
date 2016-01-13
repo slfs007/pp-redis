@@ -38,18 +38,11 @@
  * ziplist to a real hash. Note that we only check string encoded objects
  * as their string length can be queried in constant time. */
 void hashTypeTryConversion(robj *o, robj **argv, int start, int end) {
-    int i;
+
 
     if (o->encoding != REDIS_ENCODING_ZIPLIST) return;
 
-    for (i = start; i <= end; i++) {
-        if (sdsEncodedObject(argv[i]) &&
-            sdslen(argv[i]->ptr) > server.hash_max_ziplist_value)
-        {
-            hashTypeConvert(o, REDIS_ENCODING_HT);
-            break;
-        }
-    }
+    hashTypeConvert(o, REDIS_ENCODING_HT);
 }
 
 /* Encode given objects in-place when the hash uses a dict. */
@@ -212,7 +205,6 @@ int hashTypeSet(robj *o, robj *field, robj *value) {
         } else { /* Update */
             update = 1;
         }
-        incrRefCount(value);
     } else {
         redisPanic("Unknown hash encoding");
     }
@@ -495,14 +487,19 @@ void hsetnxCommand(redisClient *c) {
 void hmsetCommand(redisClient *c) {
     int i;
     robj *o;
-
+    dict *d;
     if ((c->argc % 2) == 1) {
         addReplyError(c,"wrong number of arguments for HMSET");
         return;
     }
 
     if ((o = hashTypeLookupWriteOrCreate(c,c->argv[1])) == NULL) return;
+
     hashTypeTryConversion(o,c->argv,2,c->argc-1);
+    //PP ADD
+    d = o->ptr;
+    d->cur = c->db->dict->cur;
+    //PP END
     for (i = 2; i < c->argc; i += 2) {
         hashTypeTryObjectEncoding(o,&c->argv[i], &c->argv[i+1]);
         hashTypeSet(o,c->argv[i],c->argv[i+1]);

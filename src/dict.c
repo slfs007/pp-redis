@@ -156,7 +156,7 @@ void DE_EMPTY_UUW_ASSERT(dict *d,dictEntry *de)
 }
 int (*StateConvertMatrix[DE_MAX][OP_MAX])(dict *d,dictEntry *,void *);
 /*NORMAL_W*/
-static int _deNormalWUpdate(dict *d,dictEntry *de,void *val)
+int _deNormalWUpdate(dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_NORMAL_W_ASSERT(d,de);
@@ -167,7 +167,7 @@ static int _deNormalWUpdate(dict *d,dictEntry *de,void *val)
     DE_UPDATE_W_ASSERT(d,de);
     return 1;
 }
-static int _deNormalWDel( dict *d,dictEntry *de,void *val)
+int _deNormalWDel( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_NORMAL_W_ASSERT(d,de);
@@ -177,7 +177,7 @@ static int _deNormalWDel( dict *d,dictEntry *de,void *val)
     return 1;
 }
 /*NORMAL_UW*/
-static int _deNormalUWUpdate( dict *d,dictEntry *de,void *val)
+int _deNormalUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_NORMAL_UW_ASSERT(d,de);
@@ -189,7 +189,7 @@ static int _deNormalUWUpdate( dict *d,dictEntry *de,void *val)
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
-static int _deNormalUWDel( dict *d,dictEntry *de,void *val)
+int _deNormalUWDel( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_NORMAL_UW_ASSERT(d,de);
@@ -200,7 +200,7 @@ static int _deNormalUWDel( dict *d,dictEntry *de,void *val)
     DE_EMPTY_UW_ASSERT(d,de);
     return 1;
 }
-static int _deNormalUWW2D( dict *d,dictEntry *de,void *val)
+int _deNormalUWW2D( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_NORMAL_UW_ASSERT(d,de);
@@ -210,7 +210,7 @@ static int _deNormalUWW2D( dict *d,dictEntry *de,void *val)
     return 1;
 }
 /*UPDATE_W*/
-static int _deUpdateWUpdate( dict *d,dictEntry *de,void *val)
+int _deUpdateWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_UPDATE_W_ASSERT(d,de);
@@ -225,7 +225,7 @@ static int _deUpdateWUpdate( dict *d,dictEntry *de,void *val)
     DE_UPDATE_W_ASSERT(d,de);
     return 1;
 }
-static int _deUpdateWDel( dict *d,dictEntry *de,void *val)
+int _deUpdateWDel( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_UPDATE_W_ASSERT(d,de);
@@ -238,7 +238,7 @@ static int _deUpdateWDel( dict *d,dictEntry *de,void *val)
     return 1;
 }
 /*UPDATE_UW*/
-static int _deUpdateUWUpdate( dict *d,dictEntry *de,void *val)
+int _deUpdateUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert ( val != NULL);
     DE_UPDATE_UW_ASSERT(d,de);
@@ -252,7 +252,7 @@ static int _deUpdateUWUpdate( dict *d,dictEntry *de,void *val)
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
-static int _deUpdateUWDel( dict *d,dictEntry *de,void *val)
+int _deUpdateUWDel( dict *d,dictEntry *de,void *val)
 {
     assert ( val == NULL);
     DE_UPDATE_UW_ASSERT(d,de);
@@ -269,7 +269,7 @@ static int _deUpdateUWDel( dict *d,dictEntry *de,void *val)
     }
     return 1;
 }
-static int _deUpdateUWW2D( dict *d,dictEntry *de,void *val)
+int _deUpdateUWW2D( dict *d,dictEntry *de,void *val)
 {
     assert ( val == NULL);
     DE_UPDATE_UW_ASSERT(d,de);
@@ -290,7 +290,7 @@ static int _deUpdateUWW2D( dict *d,dictEntry *de,void *val)
     return 1;
 }
 /*EMPTY_W*/
-static int _deEmptyWUpdate( dict *d,dictEntry *de,void *val)
+int _deEmptyWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_EMPTY_W_ASSERT(d,de);
@@ -302,7 +302,7 @@ static int _deEmptyWUpdate( dict *d,dictEntry *de,void *val)
 
 }
 /*EMPTY_UW*/
-static int _deEmptyUWUpdate( dict *d,dictEntry *de,void *val)
+int _deEmptyUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert(val != NULL);
     DE_EMPTY_UW_ASSERT(d,de);
@@ -314,7 +314,7 @@ static int _deEmptyUWUpdate( dict *d,dictEntry *de,void *val)
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
-static int _deEmptyUWW2D( dict *d,dictEntry *de,void *val)
+int _deEmptyUWW2D( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_EMPTY_UW_ASSERT(d,de);
@@ -324,7 +324,7 @@ static int _deEmptyUWW2D( dict *d,dictEntry *de,void *val)
     return 1;
 }
 /*EMPTY_UUW*/
-static int _deEmptyUUWUpdate( dict *d,dictEntry *de,void *val)
+int _deEmptyUUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_EMPTY_UUW_ASSERT(d,de);
@@ -336,7 +336,7 @@ static int _deEmptyUUWUpdate( dict *d,dictEntry *de,void *val)
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
-static int _deEmptyUUWW2D( dict *d,dictEntry *de,void *val)
+int _deEmptyUUWW2D( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_EMPTY_UUW_ASSERT(d,de);
@@ -409,7 +409,7 @@ int dictEntryStateConvert(dict *d,dictEntry *de,unsigned char operation,void *va
         printf("FATAL ERROR:state incorrect.");
         exit(1);
     }
-    printf("StateConvert:%d,%d\n",(int)state,(int)operation);
+
     if (StateConvertMatrix[state][operation])
         return StateConvertMatrix[state][operation](d,de,val);
     else{
@@ -971,8 +971,6 @@ void dictReleaseIterator(dictIterator *iter)
     if (!(iter->index == -1 && iter->table == 0)) {
         if (iter->safe)
             iter->d->iterators--;
-        else
-            assert(iter->fingerprint == dictFingerprint(iter->d));
     }
     zfree(iter);
 }

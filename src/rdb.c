@@ -610,18 +610,22 @@ int rdbSaveObject(rio *rdb, robj *o) {
         } else if (o->encoding == REDIS_ENCODING_HT) {
             dictIterator *di = dictGetIterator(o->ptr);
             dictEntry *de;
-
+            dict *d;
             if ((n = rdbSaveLen(rdb,dictSize((dict*)o->ptr))) == -1) return -1;
             nwritten += n;
 
-            while((de = dictNext(di)) != NULL) {
+            d = o->ptr;
+            while(NULL != (de = dictNext(di))) {
+                if (de->writed == d->cur )
+                    continue;
                 robj *key = dictGetKey(de);
-                robj *val = dictGetVal(de);
+                robj *val = dictGetValRDB(d,de);
 
                 if ((n = rdbSaveStringObject(rdb,key)) == -1) return -1;
                 nwritten += n;
                 if ((n = rdbSaveStringObject(rdb,val)) == -1) return -1;
                 nwritten += n;
+                dictEntryStateConvert(d,de,OP_W2D,NULL);
             }
             dictReleaseIterator(di);
 
@@ -709,6 +713,8 @@ int rdbSaveRio(rio *rdb, int *error) {
             if (de->writed == d->cur || de->state == DE_EMPTY)
                 continue;
             o = dictGetValRDB(d,de);
+            if (o->type == REDIS_HASH)
+                ((dict *)o->ptr)->cur = d->cur;
             initStaticStringObject(key,keystr);
             expire = getExpire(db,&key);
             if (rdbSaveKeyValuePair(rdb,&key,o,expire,now) == -1) goto werr;
