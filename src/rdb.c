@@ -620,7 +620,8 @@ int rdbSaveObject(rio *rdb, robj *o) {
                     continue;
                 robj *key = dictGetKey(de);
                 robj *val = dictGetValRDB(d,de);
-
+                if (NULL == val)
+                    continue;
                 if ((n = rdbSaveStringObject(rdb,key)) == -1) return -1;
                 nwritten += n;
                 if ((n = rdbSaveStringObject(rdb,val)) == -1) return -1;
@@ -710,9 +711,11 @@ int rdbSaveRio(rio *rdb, int *error) {
 
             long long expire;
             //PP ADD
-            if (de->writed == d->cur || de->state == DE_EMPTY)
+            if (de->writed == d->cur)
                 continue;
             o = dictGetValRDB(d,de);
+            if (NULL == o)
+                continue;
             if (o->type == REDIS_HASH)
                 ((dict *)o->ptr)->cur = d->cur;
             initStaticStringObject(key,keystr);

@@ -96,7 +96,7 @@ void DE_NORMAL_W_ASSERT(dict *d,dictEntry *de)
     assert( de->state == DE_NORMAL);
     assert( de->writed == d->cur);
     assert( de->v.val[3] != NULL);
-    assert( de->v.val[2] == de->v.val[3]);
+
 
 }
 void DE_NORMAL_UW_ASSERT(dict *d,dictEntry *de)
@@ -106,13 +106,13 @@ void DE_NORMAL_UW_ASSERT(dict *d,dictEntry *de)
     assert( de->state == DE_NORMAL);
     assert( de->writed != d->cur);
     assert( de->v.val[3] != NULL);
-    assert( de->v.val[2] == de->v.val[3]);
+
 
 }
 void DE_UPDATE_W_ASSERT(dict *d,dictEntry *de)
 {
-    assert( de->v.val[d->cur] != NULL);
-    assert( de->v.val[!d->cur] == NULL);
+    //assert( de->v.val[d->cur] != NULL);
+    //assert( de->v.val[!d->cur] == NULL);
     assert( de->writed == d->cur );
     assert( de->v.val[2] != NULL );
     assert( de->v.val[3] != NULL);
@@ -120,10 +120,9 @@ void DE_UPDATE_W_ASSERT(dict *d,dictEntry *de)
 }
 void DE_UPDATE_UW_ASSERT(dict *d,dictEntry *de)
 {
-    assert( de->v.val[!d->cur] != NULL);
+
     assert( de->writed != d->cur );
     assert( de->v.val[2] != NULL );
-    assert( de->v.val[2] != de->v.val[d->cur]);
     assert( de->v.val[3] != NULL);
     assert( de->state == DE_UPDATE );
 }
@@ -221,7 +220,6 @@ int _deUpdateWUpdate( dict *d,dictEntry *de,void *val)
     dictSetVal(d,de,val,2);
     dictSetVal(d,de,val,d->cur);
 
-    de->state = DE_UPDATE;
     DE_UPDATE_W_ASSERT(d,de);
     return 1;
 }
