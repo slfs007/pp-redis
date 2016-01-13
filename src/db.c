@@ -118,14 +118,17 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
  * 2) clients WATCHing for the destination key notified.
  * 3) The expire time of the key is reset (the key is made persistent). */
 void setKey(redisDb *db, robj *key, robj *val) {
+
     if (lookupKeyWrite(db,key) == NULL) {
         dbAdd(db,key,val);
     } else {
         dbOverwrite(db,key,val);
     }
-    incrRefCount(val);
+
     removeExpire(db,key);
+
     signalModifiedKey(db,key);
+
 }
 
 int dbExists(redisDb *db, robj *key) {

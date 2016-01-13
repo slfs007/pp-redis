@@ -32,7 +32,7 @@
 
 #include <stdio.h>
 #include "rio.h"
-
+#include "dict.h"
 /* TBD: include only necessary headers. */
 #include "redis.h"
 

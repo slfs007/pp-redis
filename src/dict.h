@@ -141,15 +141,7 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
         (d)->type->valDestructor((d)->privdata, de->v.val[_val_idx_]);\
     de->v.val[_val_idx_] = NULL;\
 }while(0)
-#define dictSetVal(d, entry, _val_) do { \
-    if ((d)->type->valDup){ \
-        entry->v.val[d->cur] = (d)->type->valDup((d)->privdata, _val_); \
-        entry->v.val[2] = (d)->type->valDup((d)->privdata, _val_);\
-    }else{ \
-        entry->v.val[d->cur] = (_val_); \
-        entry->v.val[2] = (_val_);\
-    }\
-} while(0)
+
 /*PP ADD */
 #define dictSetBackupVal(d,entry,_val_) do {\
     if ((d)->type->valDup){ \
@@ -187,7 +179,8 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 #define dictGetKey(he) ((he)->key)
 
 #define dictGetVal(he)      ((he)->v.val[2])
-#define dictGetValRDB(he)   ((he)->v.val[3])
+//PP ADD
+
 
 #define dictGetSignedIntegerVal(he) ((he)->v.s64)
 #define dictGetUnsignedIntegerVal(he) ((he)->v.u64)
@@ -233,4 +226,7 @@ extern dictType dictTypeHeapStrings;
 extern dictType dictTypeHeapStringCopyKeyValue;
 /*PP ADD*/
 int dictEntryStateConvert(dict *d,dictEntry *de,unsigned char operation,void *val);
+void* dictGetValRDB(dict *d, dictEntry *de);
+void dictSetVal(dict *d,dictEntry *de,void *val,int idx);
+#include "redis.h"
 #endif /* __DICT_H */

@@ -31,7 +31,7 @@
 #include "lzf.h"    /* LZF compression library */
 #include "zipmap.h"
 #include "endianconv.h"
-
+#include "dict.h"
 #include <math.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -702,10 +702,13 @@ int rdbSaveRio(rio *rdb, int *error) {
         /* Iterate this DB writing every entry */
         while((de = dictNext(di)) != NULL) {
             sds keystr = dictGetKey(de);
-            robj key, *o = dictGetValRDB(de);
+            robj key, *o;
+
             long long expire;
-            if (de->writed == d->cur)
+            //PP ADD
+            if (de->writed == d->cur || de->state == DE_EMPTY)
                 continue;
+            o = dictGetValRDB(d,de);
             initStaticStringObject(key,keystr);
             expire = getExpire(db,&key);
             if (rdbSaveKeyValuePair(rdb,&key,o,expire,now) == -1) goto werr;

@@ -1503,8 +1503,10 @@ void initServerConfig(void) {
      * initial configuration, since command names may be changed via
      * redis.conf using the rename-command directive. */
     server.commands = dictCreate(&commandTableDictType,NULL);
-    server.orig_commands = dictCreate(&commandTableDictType,NULL);
+    //server.orig_commands = dictCreate(&commandTableDictType,NULL);
+
     populateCommandTable();
+
     server.delCommand = lookupCommandByCString("del");
     server.multiCommand = lookupCommandByCString("multi");
     server.lpushCommand = lookupCommandByCString("lpush");
@@ -1524,6 +1526,7 @@ void initServerConfig(void) {
     server.assert_line = 0;
     server.bug_report_start = 0;
     server.watchdog_period = 0;
+
 }
 
 /* This function will try to raise the max number of open files accordingly to
@@ -1897,10 +1900,12 @@ void populateCommandTable(void) {
         }
 
         retval1 = dictAdd(server.commands, sdsnew(c->name), c);
+
         /* Populate an additional dictionary that will be unaffected
          * by rename-command statements in redis.conf. */
-        retval2 = dictAdd(server.orig_commands, sdsnew(c->name), c);
-        redisAssert(retval1 == DICT_OK && retval2 == DICT_OK);
+        //retval2 = dictAdd(server.orig_commands, sdsnew(c->name), c);
+
+        //redisAssert(retval1 == DICT_OK && retval2 == DICT_OK);
     }
 }
 
@@ -1978,7 +1983,7 @@ struct redisCommand *lookupCommandByCString(char *s) {
 struct redisCommand *lookupCommandOrOriginal(sds name) {
     struct redisCommand *cmd = dictFetchValue(server.commands, name);
 
-    if (!cmd) cmd = dictFetchValue(server.orig_commands,name);
+    if (!cmd) cmd = NULL;
     return cmd;
 }
 
@@ -3565,19 +3570,23 @@ int main(int argc, char **argv) {
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
+
     setlocale(LC_COLLATE,"");
     zmalloc_enable_thread_safeness();
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
     srand(time(NULL)^getpid());
     gettimeofday(&tv,NULL);
+
     dictSetHashFunctionSeed(tv.tv_sec^tv.tv_usec^getpid());
     server.sentinel_mode = checkForSentinelMode(argc,argv);
+
     initServerConfig();
 
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
      * data structures with master nodes to monitor. */
     if (server.sentinel_mode) {
+
         initSentinelConfig();
         initSentinel();
     }

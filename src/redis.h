@@ -669,13 +669,14 @@ struct redisServer {
     // PP ADD
     unsigned char state;
     pthread_t rdbThread_id;
+
     /* General */
     pid_t pid;                  /* Main process pid. */
     char *configfile;           /* Absolute config file path, or NULL */
     int hz;                     /* serverCron() calls frequency in hertz */
     redisDb *db;
     dict *commands;             /* Command table */
-    dict *orig_commands;        /* Command table before command renaming. */
+    //dict *orig_commands;        /* Command table before command renaming. */
     aeEventLoop *el;
     unsigned lruclock:REDIS_LRU_BITS; /* Clock for LRU eviction */
     int shutdown_asap;          /* SHUTDOWN needed ASAP */

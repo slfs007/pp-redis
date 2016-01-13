@@ -66,6 +66,29 @@ static int _dictKeyIndex(dict *ht, const void *key);
 static int _dictInit(dict *ht, dictType *type, void *privDataPtr);
 
 /* -------------------------- hash functions -------------------------------- */
+void* dictGetValRDB(dict *d, dictEntry *de)
+{
+    if (de->state == DE_NORMAL){
+        return de->v.val[3];
+    }
+    else if (de->state == DE_UPDATE){
+        return de->v.val[!d->cur];
+    }else if (de->state == DE_EMPTY){
+        return de->v.val[!d->cur];
+    }else{
+        printf("dictGetValRDB:state %d,cur %d\n",(int)de->state,(int)d->cur);
+        exit(1);
+    }
+}
+void dictSetVal(dict *d,dictEntry *de,void *val,int idx)
+{
+    if (d->type->valDup){
+        de->v.val[idx] = d->type->valDup(d->privdata,val);
+    }else{
+        de->v.val[idx] = val;
+    }
+    incrRefCount(val);
+}
 void DE_NORMAL_W_ASSERT(dict *d,dictEntry *de)
 {
     assert( de->v.val[0] == NULL);
@@ -129,7 +152,7 @@ void DE_EMPTY_UUW_ASSERT(dict *d,dictEntry *de)
     assert( de->v.val[d->cur] == NULL);
     assert( de->v.val[!d->cur] != NULL);
     assert( de->v.val[2] == NULL );
-    assert( de->v.val[3] != NULL);
+    assert( de->v.val[3] == NULL);
 }
 int (*StateConvertMatrix[DE_MAX][OP_MAX])(dict *d,dictEntry *,void *);
 /*NORMAL_W*/
@@ -138,7 +161,8 @@ static int _deNormalWUpdate(dict *d,dictEntry *de,void *val)
     assert( val != NULL);
     DE_NORMAL_W_ASSERT(d,de);
     dictFreeVal(d,de,2);
-    dictSetVal(d,de,val);
+    dictSetVal(d,de,val,2);
+    dictSetVal(d,de,val,d->cur);
     de->state = DE_UPDATE;
     DE_UPDATE_W_ASSERT(d,de);
     return 1;
@@ -157,7 +181,10 @@ static int _deNormalUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_NORMAL_UW_ASSERT(d,de);
-    dictSetVal(d,de,val);
+    dictFreeVal(d,de,2);
+    dictSetVal(d,de,val,2);
+    dictSetVal(d,de,val,d->cur);
+
     de->state = DE_UPDATE;
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
@@ -166,7 +193,9 @@ static int _deNormalUWDel( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_NORMAL_UW_ASSERT(d,de);
+
     dictFreeVal(d,de,2);
+
     de->state = DE_EMPTY;
     DE_EMPTY_UW_ASSERT(d,de);
     return 1;
@@ -189,7 +218,9 @@ static int _deUpdateWUpdate( dict *d,dictEntry *de,void *val)
     dictFreeVal(d,de,d->cur);
     dictFreeVal(d,de,2);
     //set new val
-    dictSetVal(d,de,val);
+    dictSetVal(d,de,val,2);
+    dictSetVal(d,de,val,d->cur);
+
     de->state = DE_UPDATE;
     DE_UPDATE_W_ASSERT(d,de);
     return 1;
@@ -198,10 +229,12 @@ static int _deUpdateWDel( dict *d,dictEntry *de,void *val)
 {
     assert( val == NULL);
     DE_UPDATE_W_ASSERT(d,de);
+
     dictFreeKey(d,de);
     dictFreeVal(d,de,d->cur);
     dictFreeVal(d,de,2);
     dictFreeVal(d,de,3);
+
     return 1;
 }
 /*UPDATE_UW*/
@@ -209,10 +242,13 @@ static int _deUpdateUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert ( val != NULL);
     DE_UPDATE_UW_ASSERT(d,de);
+
     dictFreeVal(d,de,2);
     if (de->v.val[d->cur])
         dictFreeVal(d,de,d->cur);
-    dictSetVal(d,de,val);
+    dictSetVal(d,de,val,2);
+    dictSetVal(d,de,val,d->cur);
+
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
@@ -222,17 +258,26 @@ static int _deUpdateUWDel( dict *d,dictEntry *de,void *val)
     DE_UPDATE_UW_ASSERT(d,de);
     dictFreeVal(d,de,2);
     dictFreeVal(d,de,d->cur);
+
     de->state = DE_EMPTY;
-    DE_EMPTY_UW_ASSERT(d,de);
+    if (de->v.val[!d->cur]){
+        dictFreeVal(d,de,3);
+        DE_EMPTY_UUW_ASSERT(d,de);
+    }
+    else{
+        DE_EMPTY_UW_ASSERT(d,de);
+    }
     return 1;
 }
 static int _deUpdateUWW2D( dict *d,dictEntry *de,void *val)
 {
     assert ( val == NULL);
     DE_UPDATE_UW_ASSERT(d,de);
+
     dictFreeVal(d,de,3);
-    dictSetBackupVal(d,de,val);
-    dictFreeVal(d,de,d->cur);
+    dictSetVal(d,de,de->v.val[!d->cur],3);
+    dictFreeVal(d,de,!d->cur);
+
     de->writed = d->cur;
     if (de->v.val[d->cur]){
         de->state = DE_UPDATE;
@@ -249,10 +294,8 @@ static int _deEmptyWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_EMPTY_W_ASSERT(d,de);
-    //dictSetVal will set val to val[cur] and val[2],But we just need to set val[2].
-    dictSetVal(d,de,val);
-    dictFreeVal(d,de,d->cur);
-    dictSetBackupVal(d,de,val);
+    dictSetVal(d,de,val,2);
+    dictSetVal(d,de,val,3);
     de->state = DE_NORMAL;
     DE_NORMAL_W_ASSERT(d,de);
     return 1;
@@ -263,8 +306,11 @@ static int _deEmptyUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert(val != NULL);
     DE_EMPTY_UW_ASSERT(d,de);
-    dictSetVal(d,de,val);
+
+    dictSetVal(d,de,val,d->cur);
+    dictSetVal(d,de,val,2);
     de->state = DE_UPDATE;
+
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
@@ -282,8 +328,11 @@ static int _deEmptyUUWUpdate( dict *d,dictEntry *de,void *val)
 {
     assert( val != NULL);
     DE_EMPTY_UUW_ASSERT(d,de);
-    dictSetVal(d,de,val);
+
+    dictSetVal(d,de,val,2);
+    dictSetVal(d,de,val,d->cur);
     de->state = DE_UPDATE;
+
     DE_UPDATE_UW_ASSERT(d,de);
     return 1;
 }
@@ -628,9 +677,8 @@ int dictAdd(dict *d, void *key, void *val)
     dictEntry *entry = dictAddRaw(d,key);
 
     if (!entry) return DICT_ERR;
-    dictSetBackupVal(d,entry,val);
-    dictSetVal(d,entry,val);
-    dictFreeVal(d,entry,d->cur);
+    dictSetVal(d,entry,val,2);
+    dictSetVal(d,entry,val,3);
     DE_NORMAL_W_ASSERT(d,entry);
     return DICT_OK;
 }
